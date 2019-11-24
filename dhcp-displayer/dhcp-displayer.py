@@ -1,48 +1,62 @@
 #!/usr/bin/python
-############################################################
-# Requirements:
-# pip install scapy
-############################################################
 
+#Imports
 from scapy.all import *
 from termcolor import colored
 import datetime
+import string
+import argparse
 
+# Static Configuration
+# Default Broadcast MAC Address
+broadcast_mac = 'ff:ff:ff:ff:ff:ff'
 # To stop scapy from checking return packet originating from any packet that we have sent out
 conf.checkIPaddr=False
-
 # Disable default scapy output
 conf.verb = 0
 
+# Arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('-i','--interface', action='store', required=True, dest='interface',help='Set interface to use')
+args = parser.parse_args()
+
+print(args.interface)
+localiface = args.interface
+
 # Configuration
-localiface = 'eth0'
 localmac = get_if_hwaddr(localiface)
-localmacraw = localmac.replace(':','').decode('hex')
-broadcast_mac = 'ff:ff:ff:ff:ff:ff'
 
 # Header
-print '###[ DHCP Discovery ]###'
-print '###[ Version 0.3 ]###'
-print '###[ Date 21/11/2019 ]###'
-print '###[ by Bruno Botelho - bruno.botelho.br@gmail.com ]###'
-print ''
+print ('###[ DHCP Discovery ]###')
+print ('###[ Version 0.7 ]###')
+print ('###[ Date 24/11/2019 ]###')
+print ('###[ by Bruno Botelho - bruno.botelho.br@gmail.com ]###')
+print ('')
 
 def log_timestamp():
     return colored(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"), 'grey')
 
 # Craft DHCP Discover
+letters = string.ascii_lowercase
+hostname = str(''.join(random.choice(letters) for i in range(10)))
 ethernet = Ether(src=localmac,dst=broadcast_mac)
 ip = IP(src="0.0.0.0", dst='255.255.255.255')
 udp = UDP(sport=68,dport=67)
-bootp = BOOTP(chaddr=localmacraw,xid = RandInt())
-dhcp = DHCP(options=[('message-type', 'discover'), 'end'])
+bootp = BOOTP(chaddr=localmac,xid = RandInt())
+dhcp = DHCP(options=[('message-type', 'discover'),
+('param_req_list',[1, 121, 3, 6, 15, 119, 252, 44, 46]),
+('max_dhcp_size', 1500),
+('client_id', localmac),
+('lease_time', 43200),
+('hostname', hostname),
+'end'])
 dhcp_discover_packet = ethernet / ip / udp / bootp / dhcp
 
 # Send discover, wait for reply
-print '###[ ' + log_timestamp() + ' Send discover, wait for reply ]###'
+print ('###[ ' + log_timestamp() + ' Send discover, wait for reply ]###')
 #print dhcp_discover_packet.summary()
 #print dhcp_discover_packet.display()
-print ''
+print ('')
 dhcp_offer = srp1(dhcp_discover_packet,iface=localiface)
 
 # Results
