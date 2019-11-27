@@ -6,6 +6,8 @@ from termcolor import colored
 import datetime
 import string
 import argparse
+import platform
+import binascii
 
 # Static Configuration
 # Default Broadcast MAC Address
@@ -36,13 +38,23 @@ print ('')
 def log_timestamp():
     return colored(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"), 'grey')
 
+def mac_to_hex(mac):
+    if '3.' in platform.python_version():
+        return binascii.unhexlify(mac.replace(':',''))
+    else:
+        return mac.replace(':', '').decode('hex')
+
+localmac_raw = mac_to_hex(localmac)
+print (localmac)
+print (localmac_raw)
+
 # Craft DHCP Discover
 letters = string.ascii_lowercase
 hostname = str(''.join(random.choice(letters) for i in range(10)))
 ethernet = Ether(src=localmac,dst=broadcast_mac)
 ip = IP(src="0.0.0.0", dst='255.255.255.255')
 udp = UDP(sport=68,dport=67)
-bootp = BOOTP(chaddr=localmac,xid = RandInt())
+bootp = BOOTP(chaddr=localmac_raw,xid = RandInt())
 dhcp = DHCP(options=[('message-type', 'discover'),
 ('param_req_list',[1, 121, 3, 6, 15, 119, 252, 44, 46]),
 ('max_dhcp_size', 1500),
