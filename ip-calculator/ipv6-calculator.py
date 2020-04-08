@@ -5,8 +5,8 @@ import sys
 
 # Header
 print '###[ IPv6 Calculator ]###'
-print '###[ Version 0.2 ]###'
-print '###[ Date 06/06/2019 ]###'
+print '###[ Version 0.3 ]###'
+print '###[ Date 08/04/2020 ]###'
 print '###[ by Bruno Botelho - bruno.botelho.br@gmail.com ]###'
 print ''
 
