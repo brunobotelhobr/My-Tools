@@ -19,7 +19,7 @@ conf.verb = 0
 
 # Arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('-all', required=False, action='store_true', help='[Opetional] Attack by all DHCP servers, by default it attacks only the first found.')
+parser.add_argument('-all', required=False, action='store_true', help='[Optional] Attack by all DHCP servers, by default it attacks only the first found.')
 parser.add_argument('-i','--interface', action='store', required=True, dest='interface',help='[Required] Set interface to use on DHCP attacks.')
 args = parser.parse_args()
 
