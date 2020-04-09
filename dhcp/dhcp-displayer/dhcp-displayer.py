@@ -1,4 +1,5 @@
 #!/usr/bin/python
+############################################################
 
 #Imports
 from scapy.all import *
@@ -36,7 +37,7 @@ print ('###[ by Bruno Botelho - bruno.botelho.br@gmail.com ]###')
 print ('')
 
 def log_timestamp():
-    return colored(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"), 'grey')
+    return colored(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
 
 def mac_to_hex(mac):
     if '3.' in platform.python_version():
@@ -45,8 +46,9 @@ def mac_to_hex(mac):
         return mac.replace(':', '').decode('hex')
 
 localmac_raw = mac_to_hex(localmac)
-print (localmac)
-print (localmac_raw)
+print ('###[ ' + log_timestamp() + ' Source MAC :' + localmac +  ']###')
+#print (localmac_raw)
+#input("Press Enter to continue...")
 
 # Craft DHCP Discover
 letters = string.ascii_lowercase
@@ -67,17 +69,25 @@ dhcp_discover_packet = ethernet / ip / udp / bootp / dhcp
 # Send discover, wait for reply
 print ('###[ ' + log_timestamp() + ' Send discover, wait for reply ]###')
 #print dhcp_discover_packet.summary()
+#input("Press Enter to continue...")
 #print dhcp_discover_packet.display()
+#input("Press Enter to continue...")
 print ('')
-dhcp_offer = srp1(dhcp_discover_packet,iface=localiface)
+dhcp_offer = srp1(dhcp_discover_packet,iface=localiface, timeout=10)
+if (dhcp_offer == None):
+    print ('###[ Request Timeout ]###')
+    quit()
 
 # Results
 for pkt in dhcp_offer:
-    print ('###[ ' + log_timestamp() + ' DHCP Server Address :' + colored (pkt.getlayer(BOOTP).siaddr,'red') + ' ]###')
-    print ('###[ ' + log_timestamp() + ' Your Address :' + colored(pkt.getlayer(BOOTP).yiaddr,'blue') + ' ]###')
+    #input("Press Enter to continue...")
+    print ('###[ ' + log_timestamp() + ' Reply Received ]###')
+    print ('###[ ' + log_timestamp() + ' DHCP Server Address : ' + colored (pkt.getlayer(BOOTP).siaddr,'red') + ' ]###')
+    print ('###[ ' + log_timestamp() + ' Your Address        : ' + colored(pkt.getlayer(BOOTP).yiaddr,'blue') + ' ]###')
     print ('###[ ' + log_timestamp() + ' DHCP Parameters ] ###')
     for i in pkt.getlayer(DHCP).options:
-        print (i[0] + ' : \t' + colored (i[1],'green'))
+        if (len(i[0]) > 1):
+            print (i[0] + '\t : ' + colored (i[1],'green'))
     print (' ')
     #print (pkt.summary())
     #print (pkt.display())

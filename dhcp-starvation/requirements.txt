@@ -1,3 +1,0 @@
-scapy>=2.4.2
-netaddr>=0.7.19
-ConfigParser<=4.0.2
