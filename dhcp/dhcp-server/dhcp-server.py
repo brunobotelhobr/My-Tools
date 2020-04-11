@@ -6,11 +6,11 @@ from netaddr import *
 import sys
 import threading
 import binascii
-import ConfigParser
+import configparser
 import os
 
 # Configuration
-config = ConfigParser.ConfigParser()
+config = configparser.ConfigParser()
 config.read("dhcp-server.conf")
 
 server_ip = config.get("dhcp-server-config", "server_ip")

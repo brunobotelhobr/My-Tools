@@ -62,7 +62,7 @@ def generate_mac(uaa=True, multicast=False, oui=None, separator=':', byte_fmt='%
     return str(separator.join(byte_fmt % b for b in mac))
 
 def log_timestamp():
-    return colored(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+    return datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
 def dhcp_server_ip():
     letters = string.ascii_lowercase

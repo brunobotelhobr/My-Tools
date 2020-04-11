@@ -56,7 +56,7 @@ def dhcp_mon():
     print ('###[ ' + log_timestamp() + ' Send Discovery Packet ]###')
     #print dhcp_discover_packet.summary()
     #print dhcp_discover_packet.display()
-    sniff(prn=dhcp_callback, store=0, timeout=mon_time)
+    sniff(prn=dhcp_callback, store=0, inter timeout=mon_time)
     if len(dhcp_replays) > 1:
         print ('!!![ ' + log_timestamp() + colored(' More than 1 DHCP Server Replied to your Packet','red') + ']!!!')
         print ('')
@@ -73,6 +73,7 @@ def dhcp_mon():
 
 if loop == False:
     dhcp_mon()
+
 else:
     while True:
         dhcp_mon()
