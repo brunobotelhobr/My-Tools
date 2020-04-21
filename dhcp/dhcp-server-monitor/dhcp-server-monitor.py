@@ -7,6 +7,7 @@
 from scapy.all import *
 from termcolor import colored
 import datetime
+import argparse
 
 # To stop scapy from checking return packet originating from any packet that we have sent out
 conf.checkIPaddr=False
@@ -14,9 +15,12 @@ conf.checkIPaddr=False
 # Disable default scapy output
 conf.verb = 0
 
+parser = argparse.ArgumentParser()
+parser.add_argument('-i','--interface', action='store', required=True, dest='interface',help='[Required] Set interface to server DHCP services.')
+args = parser.parse_args()
 
 # Configuration
-localiface = 'en0'
+localiface = args.interface
 localmac = get_if_hwaddr(localiface)
 broadcast_mac = 'ff:ff:ff:ff:ff:ff'
 sleep_time = 20
@@ -32,7 +36,7 @@ print ('###[ by Bruno Botelho - bruno.botelho.br@gmail.com ]###')
 print ('')
 
 def log_timestamp():
-    return colored(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"), 'grey')
+    return datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
 
 def dhcp_callback(pkt):
@@ -56,7 +60,7 @@ def dhcp_mon():
     print ('###[ ' + log_timestamp() + ' Send Discovery Packet ]###')
     #print dhcp_discover_packet.summary()
     #print dhcp_discover_packet.display()
-    sniff(prn=dhcp_callback, store=0, inter timeout=mon_time)
+    sniff(prn=dhcp_callback, store=0, timeout=mon_time)
     if len(dhcp_replays) > 1:
         print ('!!![ ' + log_timestamp() + colored(' More than 1 DHCP Server Replied to your Packet','red') + ']!!!')
         print ('')
@@ -73,7 +77,6 @@ def dhcp_mon():
 
 if loop == False:
     dhcp_mon()
-
 else:
     while True:
         dhcp_mon()

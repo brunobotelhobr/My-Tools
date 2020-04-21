@@ -30,16 +30,16 @@ config.read(args.config_file)
 localiface = args.interface
 localmac = get_if_hwaddr(localiface)
 
-server_ip = config.get("dhcp-server-config", "server_ip")
-dhcp_pool = config.get("dhcp-server-config", "dhcp_pool")
-dhcp_subnet = config.get("dhcp-server-config", "dhcp_subnet")
-dhcp_gateway = config.get("dhcp-server-config", "dhcp_dns")
-dhcp_dns = config.get("dhcp-server-config", "server_ip")
-dhcp_mask = config.get("dhcp-server-config", "dhcp_mask")
-dhcp_domain = config.get("dhcp-server-config", "dhcp_domain")
-dhcp_broadcast = config.get("dhcp-server-config", "dhcp_broadcast")
-dhcp_netbiosserver = config.get("dhcp-server-config", "dhcp_netbiosserver")
-dhcp_leasetime = config.get("dhcp-server-config", "dhcp_leasetime")
+server_ip = str(config.get("dhcp-server-config", "server_ip"))
+dhcp_pool = str(config.get("dhcp-server-config", "dhcp_pool"))
+dhcp_subnet = str(config.get("dhcp-server-config", "dhcp_subnet"))
+dhcp_gateway = str(config.get("dhcp-server-config", "server_ip"))
+dhcp_dns = str(config.get("dhcp-server-config", "dhcp_dns"))
+dhcp_mask = str(config.get("dhcp-server-config", "dhcp_mask"))
+dhcp_domain = str(config.get("dhcp-server-config", "dhcp_domain"))
+dhcp_broadcast = str(config.get("dhcp-server-config", "dhcp_broadcast"))
+dhcp_netbiosserver = str(config.get("dhcp-server-config", "dhcp_netbiosserver"))
+dhcp_leasetime = int(config.get("dhcp-server-config", "dhcp_leasetime"))
 
 ip_forward = '/proc/sys/net/ipv4/ip_forward'
 
@@ -61,6 +61,12 @@ def enable_packet_forwarding():
     with open(ip_forward, 'w') as fd:
         fd.write('1')
 
+def mac_to_hex(mac):
+    try:
+        return binascii.unhexlify(mac.replace(':',''))
+    except:
+        return mac.replace(':', '').decode('hex')
+
 def disable_packet_forwarding():
     with open(ip_forward, 'w') as fd:
         fd.write('0')
@@ -76,16 +82,17 @@ def returnIP(mac):
     for row in dhcp_db:
         if row[0] == mac:
             ip = row[1]
-            print ('###[ IP ja em cache : ' + mac + ' ' + ip + ' ]###')
+            print ('###[ Cached Allocation : ' + ip + ' @ ' + mac+ ' ]###')
     if ip == 'null':
         ip = dhcp_poll_next()
-        print ('###[ IP novo alocado : ' + mac + ' ' + ip + ' ]###')
+        print ('###[ New Address Alocation : ' + ip + ' @ ' + mac + ' ]###')
         if ip != 'empty':
             dhcp_db.append([mac,ip])
     return ip
 
 def find_dhcp_traffic():
-    sniff(filter="udp and (port 67 or 68)", prn=create_dhcp_packet_analyser, iface=localiface)
+    sniff(filter="udp and (port 67 or 68)", prn=dhcp_packet_analyser, iface=localiface)
+    #sniff(filter="udp and (port 67 or 68)", prn=create_dhcp_packet_analyser, iface=localiface)
 
 def create_dhcp_packet_analyser(packet):
     chield = threading.Thread(target=dhcp_packet_analyser, args=(packet,))
@@ -97,20 +104,21 @@ def dhcp_packet_analyser(packet):
         if packet[DHCP]:
             if packet[DHCP].options:
                 if packet[DHCP].options[0][1] == 1:
-                    print('###[ DHCP Discovery Packet ]###')
-                    print ('###[ Client MAC Address: ' + packet[DHCP].client_id + ']###')
+                    #Identifica o chaddr
+                    try:
+                        mac_client_id = packet[DHCP].client_id
+                    except:
+                        mac_client_id = packet[Ether].src
+                    print('###[ DHCP Discovery Packet, Client MAC Address: ' + mac_client_id + ']###')
                     client_ip = str(returnIP(packet[Ether].src))
                     if client_ip == 'empty':
                         print('###[ No more address Avaliable ]###')
                         return         
-                    mac_addr_pkt = packet[Ether].src
-                    raw_mac_addr_pkt = binascii.unhexlify(mac_addr_pkt.replace(":", ""))
-                    mac_client_id = packet[DHCP].client_id
-                    raw_mac_client_id = binascii.unhexlify(mac_client_id.replace(":", ""))
-                    etthernet=Ether(src=localmac,dst=mac_addr_pkt)
+                    #Carft a DHCP Response
+                    etthernet=Ether(src=localmac,dst=packet[Ether].src)
                     ip=IP(src=server_ip,dst=client_ip)
                     udp=UDP(sport=67,dport=68)
-                    bootp=BOOTP(op=2,yiaddr=client_ip,siaddr=server_ip,giaddr='0.0.0.0',chaddr=raw_mac_client_id,xid=packet[BOOTP].xid)
+                    bootp=BOOTP(op=2,yiaddr=client_ip,siaddr=server_ip,giaddr='0.0.0.0',chaddr=mac_to_hex(mac_client_id),xid=packet[BOOTP].xid)
                     dhcp=DHCP(options=[('message-type','offer'),
                         ('server_id',server_ip),
                         ('lease_time',dhcp_leasetime),
@@ -123,17 +131,19 @@ def dhcp_packet_analyser(packet):
                     packet_Offer=etthernet/ip/udp/bootp/dhcp
                     print ('###[ packet DHCP Offer sended ]###')
                     print ('###[ ' + packet_Offer.summary() + ' ]###')
-                    #print packet_Offer.summary()
-                    #print packet_Offer.display()
-                    #x = sendp(packet_Offer)
-                    #print (packet_Offer)
-                    print ('')
+                    #print (packet.summary())
+                    #print (packet_Offer.display())
+                    sendp(packet_Offer)
                 if packet[DHCP].options[0][1] == 3:
-                    mac_addr = packet[Ether].src
-                    raw_mac = binascii.unhexlify(mac_addr.replace(":", ""))
-                    print ('###[ Find packet DHCP Request packet ]###')
-                    print ('###[ Client MAC Address: ' + packet[Ether].src + ']###')
-                    client_ip = returnIP(mac_addr)
+                    try:
+                        mac_client_id = packet[DHCP].client_id
+                    except:
+                        mac_client_id = packet[Ether].src
+                    print ('###[ Find packet DHCP Request Packet, Client MAC Address: ' + mac_client_id + ']###')
+                    client_ip = str(returnIP(packet[Ether].src))
+                    if client_ip == 'empty':
+                        print('###[ No more address Avaliable ]###')
+                        return   
                     if client_ip == 'empty':
                         print ('###[ No more address Avaliable ]###/n')
                     #print packet.summary()
@@ -141,7 +151,7 @@ def dhcp_packet_analyser(packet):
                     etthernet=Ether(src=localmac,dst=packet[Ether].src)
                     ip=IP(src=server_ip,dst=client_ip)
                     udp=UDP(sport=67,dport=68)
-                    bootp=BOOTP(op=2,yiaddr=client_ip,siaddr=server_ip,giaddr='0.0.0.0',chaddr=raw_mac,xid=packet[BOOTP].xid)
+                    bootp=BOOTP(op=2,yiaddr=client_ip,siaddr=server_ip,giaddr='0.0.0.0',chaddr=mac_to_hex(packet[Ether].src),xid=packet[BOOTP].xid)
                     dhcp=DHCP(options=[('message-type','ack'),
                         ('server_id',server_ip),
                         ('lease_time',dhcp_leasetime),
@@ -153,7 +163,6 @@ def dhcp_packet_analyser(packet):
                         ('NetBIOS_server',dhcp_netbiosserver),
                         ('end')])
                     packet_ACK=etthernet/ip/udp/bootp/dhcp
-                    print ('###[ DHCP Offer ACK Details ]###')
                     print ('###[ DHCP Offer ACK Details ]###')
                     print ('###[ ' + packet_ACK.summary() + ' ]###')
                     #print packet_ACK.display()
@@ -194,6 +203,3 @@ if not args.sub_int:
     print('###[  Shutdown sub interface ]###')
     cmd = ('ifconfig ' + localiface + ' down')
     os.system(cmd)
-
-
-
