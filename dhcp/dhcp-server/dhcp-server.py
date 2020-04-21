@@ -129,8 +129,7 @@ def dhcp_packet_analyser(packet):
                         ('NetBIOS_server',dhcp_netbiosserver),
                         ('end')])
                     packet_Offer=etthernet/ip/udp/bootp/dhcp
-                    print ('###[ packet DHCP Offer sended ]###')
-                    print ('###[ ' + packet_Offer.summary() + ' ]###')
+                    print ('###[ =DHCP Offer sended : ' + packet_Offer.summary() + ' ]###')
                     #print (packet.summary())
                     #print (packet_Offer.display())
                     sendp(packet_Offer)
@@ -163,8 +162,7 @@ def dhcp_packet_analyser(packet):
                         ('NetBIOS_server',dhcp_netbiosserver),
                         ('end')])
                     packet_ACK=etthernet/ip/udp/bootp/dhcp
-                    print ('###[ DHCP Offer ACK Details ]###')
-                    print ('###[ ' + packet_ACK.summary() + ' ]###')
+                    print ('###[ DHCP Offer ACK Details :' + packet_ACK.summary() + ' ]###')
                     #print packet_ACK.display()
                     sendp(packet_ACK)
                     print ('')

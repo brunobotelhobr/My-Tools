@@ -54,10 +54,16 @@ def dhcp_mon():
     ip = IP(src='0.0.0.0', dst='255.255.255.255')
     udp = UDP(sport=68,dport=67)
     bootp = BOOTP(chaddr= localmac,xid = RandInt())
-    dhcp = DHCP(options=[('message-type', 'discover'), 'end'])
+    dhcp = DHCP(options=[('message-type', 'discover'),
+    ('param_req_list',[1, 121, 3, 6, 15, 119, 252, 44, 46]),
+    ('max_dhcp_size', 1500),
+    ('client_id', localmac),
+    ('lease_time', 43200),
+    ('hostname', 'ThiIsSparta!'),
+    'end'])
     dhcp_discover_packet = ethernet / ip / udp / bootp / dhcp
-    sendp(dhcp_discover_packet)
     print ('###[ ' + log_timestamp() + ' Send Discovery Packet ]###')
+    sendp(dhcp_discover_packet)
     #print dhcp_discover_packet.summary()
     #print dhcp_discover_packet.display()
     sniff(prn=dhcp_callback, store=0, timeout=mon_time)
@@ -72,8 +78,6 @@ def dhcp_mon():
     else:
         print ('###[ ' + log_timestamp() + colored(' Got one DHCP reply, looks good =)','green') + ']###')
         print ('')
-    for i in dhcp_replays:
-        print (i.display())
 
 if loop == False:
     dhcp_mon()
