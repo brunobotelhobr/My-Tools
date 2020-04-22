@@ -15,7 +15,7 @@ conf.checkIPaddr=False
 # Disable default scapy output
 conf.verb = 0
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentPkaliarser()
 parser.add_argument('-i','--interface', action='store', required=True, dest='interface',help='[Required] Set interface to server DHCP services.')
 args = parser.parse_args()
 
