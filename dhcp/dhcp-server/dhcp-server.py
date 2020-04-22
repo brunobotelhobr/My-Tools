@@ -129,7 +129,7 @@ def dhcp_packet_analyser(packet):
                         ('NetBIOS_server',dhcp_netbiosserver),
                         ('end')])
                     packet_Offer=etthernet/ip/udp/bootp/dhcp
-                    print ('###[ =DHCP Offer sended : ' + packet_Offer.summary() + ' ]###')
+                    print ('###[ packet DHCP Offer sended : ' + packet_Offer.summary() + ' ]###')
                     #print (packet.summary())
                     #print (packet_Offer.display())
                     sendp(packet_Offer)
@@ -201,3 +201,4 @@ if not args.sub_int:
     print('###[  Shutdown sub interface ]###')
     cmd = ('ifconfig ' + localiface + ' down')
     os.system(cmd)
+
