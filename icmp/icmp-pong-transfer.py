@@ -46,7 +46,7 @@ def icmp_process(pkt):
         payload_string = payload_base_64.decode('utf-8')
         payload_vetor = payload_string.split('&&')
         if len(payload_vetor) == 2:
-            print ('###[ '+ log_timestamp() + ' Writing to ' + colored(dumpfile,'green') + ' Index > ' + colored(payload_vetor[1],'blue') + ' Character > ' + colored(payload_vetor[0],'red') + ' ]###')
+            print ('###[ '+ log_timestamp() + ' Writing to ' + colored(dumpfile,'green') + ' Index > ' + colored(payload_vetor[1],'blue') + ' Character > ' + colored(payload_vetor[0].rstrip('\n'),'red') + ' ]###')
             file = open(dumpfile, 'a')
             ack_icmp(pkt[IP].src,payload_string)
             file.write(payload_vetor[0])
