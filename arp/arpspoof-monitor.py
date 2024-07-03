@@ -100,7 +100,7 @@ def arp_callback(pkt):
     result = (
         "###[ "
         + log_timestamp()
-        + "ARP Replay "
+        + " ARP Replay "
         + colored(pkt[ARP].psrc, "blue")
         + " is at "
         + colored(pkt[ARP].hwsrc, "blue")
@@ -110,8 +110,6 @@ def arp_callback(pkt):
     ip = pkt[ARP].psrc
     if (result) not in arp_replays:
         print(result)
-        # print pkt.summary()
-        # print pkt.display()
         arp_replays.append(result)
         arp_list.append([mac, ip])
         for row in arp_list:
@@ -139,12 +137,13 @@ def arp_mon():
     print("")
 
 
+arp_replays = []
+arp_list = []
+black_list = []
+
 if LOOP is False:
     arp_mon()
 else:
     while True:
         arp_mon()
-        arp_replays = []
-        arp_list = []
-        black_list = []
         time.sleep(SLEEP_TIME)
